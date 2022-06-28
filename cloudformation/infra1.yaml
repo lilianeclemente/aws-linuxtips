@@ -100,13 +100,111 @@ Resources:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties: 
       RouteTableId: !Ref PublicaRouteTable
-      Subnetid: !Ref NovaSubenet1
+      SubnetId: !Ref NovaSubenet1
 
 # Associando a tabela de rotas com a subnet privada
   PrivadaRouteTableAssociation:
     Type: AWS::EC2::SubnetRouteTableAssociation
     Properties: 
       RouteTableId: !Ref PrivadaRouteTable
-      Subnetid: !Ref NovaSubenet2
+      SubnetId: !Ref NovaSubenet2
 
+# Criando Security Group - Web
+  NovoWebSecGroup:
+    Type: AWS:EC2::SecurityGroup
+    Properties: 
+      GroupName: WebServers
+      GroupDescription: Sec Group para os Web Servers
+      VpcId: !Ref NovaVPC
+      SecurityGroupIngress:
+        - 
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        -    
+          IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
 
+# Criando Security Group - Database
+  NovoDatabaseSecGroup:
+    Type: AWS:EC2::SecurityGroup
+    Properties: 
+      GroupName: Databases
+      GroupDescription: Sec Group para os Web Servers
+      VpcId: !Ref NovaVPC
+      SecurityGroupIngress:
+        - 
+          IpProtocol: tcp
+          FromPort: 22
+          ToPort: 22
+          CidrIp: 0.0.0.0/0
+        -    
+          IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 0.0.0.0/0
+
+# Criando volume para as instancias 
+  DBVolume:
+    Type: AWS::EC2::Volume 
+    DeletionPolicy: Snapshot
+    Properties:
+      AvailabilityZone:  !Select [0, GetAZs '' ]
+      Size: 64
+      Tags:
+        Key: Name
+        Value: data-volume
+      VolumeType: gp2
+
+# Criando instancia para banco de dados
+  NovaDBInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      BlockDeviceMappings:
+        -
+          DeviceName: "/dev/sda1"
+          Ebs: 
+            VolumeSize: 24
+            VolumeType: gp2
+      InstanceType: t2.nano
+      ImageId: ami-0b418580298265d5c
+      KeyName: aws-class-2
+      Monitoring: true
+      SecurityGroupsIds:
+        - !Ref NovoDBSecGroup
+      SubnetId: !Ref NovaSubenet2
+      Tags: 
+        Key: Name
+        Value: !Sub ${AWS::StackName}-DB         
+      Volumes: 
+        - 
+          Device: "/dev/sdc"
+          VolumeId: !Ref DBVolume
+  NovoElasticIp:
+    Type: AWS::EC2::EIP
+    Proprieties:     
+      InstanceId: !Ref NovaWEBInstance
+      Domain: NovoVPC  
+
+  NovawebInstance:
+    Type: AWS::EC2::Instance
+    Properties:
+      BlockDeviceMappings:
+        -
+          DeviceName: "/dev/sda1"
+          Ebs: 
+            VolumeSize: 24
+            VolumeType: gp2
+      InstanceType: t2.nano
+      ImageId: ami-0b418580298265d5c
+      KeyName: aws-class-2
+      Monitoring: true
+      SecurityGroupsIds:
+        - !Ref NovoWEBSecGroup
+      SubnetId: !Ref NovaSubenet1
+      Tags: 
+        Key: Name
+        Value: !Sub ${AWS::StackName}-DB                    
