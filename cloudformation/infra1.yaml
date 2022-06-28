@@ -1,0 +1,61 @@
+Resources:
+#Criando o meu VPC 
+  NovoVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.100.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+      - Key: Name
+        Value: !Sub  ${AWS::StackName}-VPC
+
+  NovoInternetGateway:
+    Type: AWS::EC2::InternetGateway
+    DependsOn: NovoVPC
+
+#Atachar VPC no Novo Internet Gateway        
+  NovoAttachGateway:      
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref NovoVPC
+      InternetGatewayId: !Ref NovoInternetGateway
+
+ #Nova Subnet 
+  NovaSubenet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.100.1.0/24
+      VpcId: !Ref NovoVPC
+      AvailabilityZone: !Select [0, !GetAZs '' ]
+      Tags:
+      - Key: Name
+        Value:  !Sub  ${AWS::StackName}-Publica
+
+ #Nova Subnet
+  NovaSubenet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      CidrBlock: 10.100.10.0/24
+      VpcId: !Ref NovoVPC
+      AvailabilityZone: !Select [0, !GetAZs '']
+      Tags:
+      - Key: Name
+        Value:  !Sub  ${AWS::StackName}-Privada
+
+# Criando Elastic IP para O NAT Gateway
+  NatGatewayElasticIp:
+    Type: AWS::EC2::EIP
+    Properties:
+      Domain: NovoVPC
+
+
+# Criando NAT Gateway
+  NovoNatGateway:
+    Type: AWS::EC2::NatGateway
+    Properties: 
+      AllocationId: !GetAtt NatGatewayElasticIp.AllocationId
+      SubnetId: !Ref NovaSubenet1
+      Tags: 
+      - Key: Name 
+        Value: !Join ['', ["NAT-", !Ref "AWS::StackName"]]
