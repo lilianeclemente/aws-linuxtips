@@ -59,3 +59,39 @@ Resources:
       Tags: 
       - Key: Name 
         Value: !Join ['', ["NAT-", !Ref "AWS::StackName"]]
+
+# Criando Route Table Privada
+  PrivadaRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref NovoVPC
+      Tags: 
+      - Key: Name 
+        Value: Privada         
+
+# Criando Route Privada conectando na route table privada e no nat gateway
+  PrivadaRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PrivadaRouteRable
+      DestionationCidrBlock: 0.0.0.0/0
+      NatGatewayId: !Ref NovoNatGateway  
+
+
+# Criando Route Table Publica
+  PublicaRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref NovoVPC
+      Tags: 
+      - Key: Name 
+        Value: Publica         
+
+# Criando Route Publica conectando na route table privada e no internet gateway
+  PublicaRoute1:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicaRouteRable
+      DestionationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref NovoInternetGateway    
+
